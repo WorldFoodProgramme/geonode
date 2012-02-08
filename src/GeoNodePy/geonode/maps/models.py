@@ -482,6 +482,8 @@ create custom structures, but they have to be validated by the \
 system, so know what you do :-)'
 )
 
+VALID_DATE_TYPES = [(lower(x), _(x)) for x in ['Creation', 'Publication', 'Revision']]
+
 class GeoNodeException(Exception):
     pass
 
@@ -654,25 +656,11 @@ class LayerManager(models.Manager):
         return output
 
 
-class Layer(models.Model, PermissionLevelMixin):
+class Resource(models.Model, PermissionLevelMixin):
     """
-    Layer Object loosely based on ISO 19115:2003
+    Abstract Base Class for Resources
+    Loosely based on ISO 19115:2003
     """
-
-    VALID_DATE_TYPES = [(lower(x), _(x)) for x in ['Creation', 'Publication', 'Revision']]
-
-    # internal fields
-    objects = LayerManager()
-    workspace = models.CharField(max_length=128)
-    store = models.CharField(max_length=128)
-    storeType = models.CharField(max_length=128)
-    name = models.CharField(max_length=128)
-    uuid = models.CharField(max_length=36)
-    typename = models.CharField(max_length=128, unique=True)
-    owner = models.ForeignKey(User, blank=True, null=True)
-
-    contacts = models.ManyToManyField(Contact, through='ContactRole')
-
     # section 1
     title = models.CharField(_('title'), max_length=255)
     date = models.DateTimeField(_('date'), default = datetime.now) # passing the method itself, not the result
@@ -713,6 +701,27 @@ class Layer(models.Model, PermissionLevelMixin):
 
     # Section 9
     # see metadata_author property definition below
+
+    class Meta:
+        abstract = True
+
+
+class Layer(Resource):
+    """
+    Layer Class inheriting Resource fields
+    """
+
+    # internal fields
+    objects = LayerManager()
+    workspace = models.CharField(max_length=128)
+    store = models.CharField(max_length=128)
+    storeType = models.CharField(max_length=128)
+    name = models.CharField(max_length=128)
+    uuid = models.CharField(max_length=36)
+    typename = models.CharField(max_length=128, unique=True)
+    owner = models.ForeignKey(User, blank=True, null=True)
+
+    contacts = models.ManyToManyField(Contact, through='ContactRole')
 
     def download_links(self):
         """Returns a list of (mimetype, URL) tuples for downloads of this data
@@ -1174,20 +1183,11 @@ class Layer(models.Model, PermissionLevelMixin):
             self.set_user_level(self.owner, self.LEVEL_ADMIN)
 
 
-class Map(models.Model, PermissionLevelMixin):
+class Map(Resource):
     """
+    Map Class
     A Map aggregates several layers together and annotates them with a viewport
-    configuration.
-    """
-
-    title = models.TextField(_('Title'))
-    """
-    A display name suitable for search results and page headers
-    """
-
-    abstract = models.TextField(_('Abstract'))
-    """
-    A longer description of the themes in the map.
+    configuration. Inherits many fields from Resource class
     """
 
     # viewer configuration
