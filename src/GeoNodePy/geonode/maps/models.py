@@ -661,6 +661,10 @@ class Resource(models.Model, PermissionLevelMixin):
     Abstract Base Class for Resources
     Loosely based on ISO 19115:2003
     """
+    uuid = models.CharField(max_length=36)
+    owner = models.ForeignKey(User, blank=True, null=True)
+    last_modified = models.DateTimeField(auto_now_add=True)
+
     # section 1
     title = models.CharField(_('title'), max_length=255)
     date = models.DateTimeField(_('date'), default = datetime.now) # passing the method itself, not the result
@@ -717,9 +721,7 @@ class Layer(Resource):
     store = models.CharField(max_length=128)
     storeType = models.CharField(max_length=128)
     name = models.CharField(max_length=128)
-    uuid = models.CharField(max_length=36)
     typename = models.CharField(max_length=128, unique=True)
-    owner = models.ForeignKey(User, blank=True, null=True)
 
     contacts = models.ManyToManyField(Contact, through='ContactRole')
 
@@ -1186,8 +1188,11 @@ class Layer(Resource):
 class Map(Resource):
     """
     Map Class
+    
     A Map aggregates several layers together and annotates them with a viewport
-    configuration. Inherits many fields from Resource class
+    configuration. 
+
+    Inherits many fields from Resource class
     """
 
     # viewer configuration
@@ -1213,16 +1218,6 @@ class Map(Resource):
     """
     The y coordinate to center on when loading this map.  Its interpretation
     depends on the projection.
-    """
-
-    owner = models.ForeignKey(User, verbose_name=_('owner'), blank=True, null=True)
-    """
-    The user that created/owns this map.
-    """
-
-    last_modified = models.DateTimeField(auto_now_add=True)
-    """
-    The last time the map was modified.
     """
 
     def __unicode__(self):
