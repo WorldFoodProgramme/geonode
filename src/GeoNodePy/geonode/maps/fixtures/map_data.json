@@ -19,10 +19,10 @@
     },
     {
         "fields": {
-            "typename": "base:CA",
-            "store": "CA",
-            "name": "CA",
-            "workspace": "base",
+            "typename": "geonode:Water_Hydrant_SD",
+            "store": "Water_Hydrant_SD",
+            "name": "Water_Hydrant_SD",
+            "workspace": "geonode",
             "uuid": "254afb8e-5a5f-4c1f-b01b-40af91532298"
         },
         "model": "maps.layer",
@@ -47,7 +47,7 @@
             "group": "background",
             "layer_params": "",
             "map": 1,
-            "name": "base:CA",
+            "name": "geonode:Water_Hydrant_SD",
             "ows_url": "http://localhost:8001/geoserver/wms",
             "source_params": "",
             "stack_order": 0
@@ -79,7 +79,7 @@
             "fixed": true,
             "format": null,
             "group": "background",
-            "layer_params": "{\"args\": [\"base:CA\", \"http://localhost:8001/geoserver/wms\", {\"layers\": [\"base:CA\"], \"tiled\": true, \"tilesOrigin\": [-20037508.34, -20037508.34], \"format\": \"image/png\"}, {\"buffer\": 0}], \"type\": \"OpenLayers.Layer.WMS\"}",
+            "layer_params": "{\"args\": [\"geonode:Water_Hydrant_SD\", \"http://localhost:8001/geoserver/wms\", {\"layers\": [\"geonode:Water_Hydrant_SD\"], \"tiled\": true, \"tilesOrigin\": [-20037508.34, -20037508.34], \"format\": \"image/png\"}, {\"buffer\": 0}], \"type\": \"OpenLayers.Layer.WMS\"}",
             "map": 1,
             "name": null,
             "opacity": 1,

@@ -95,7 +95,7 @@ class LayerForm(forms.ModelForm):
 class RoleForm(forms.ModelForm):
     class Meta:
         model = ContactRole
-        exclude = ('contact', 'layer')
+        exclude = ('contact', 'resource')
 
 class PocForm(forms.Form):
     contact = forms.ModelChoiceField(label = "New point of contact",
@@ -109,7 +109,6 @@ class MapForm(forms.ModelForm):
         widgets = {
             'abstract': forms.Textarea(attrs={'cols': 40, 'rows': 10}),
         }
-
 
 
 MAP_LEV_NAMES = {
@@ -707,8 +706,8 @@ def _describe_layer(request, layer):
         
         poc = layer.poc
         metadata_author = layer.metadata_author
-        poc_role = ContactRole.objects.get(layer=layer, role=layer.poc_role)
-        metadata_author_role = ContactRole.objects.get(layer=layer, role=layer.metadata_author_role)
+        poc_role = ContactRole.objects.get(resource=layer, role=layer.poc_role)
+        metadata_author_role = ContactRole.objects.get(resource=layer, role=layer.metadata_author_role)
 
         if request.method == "POST":
             layer_form = LayerForm(request.POST, instance=layer, prefix="layer")

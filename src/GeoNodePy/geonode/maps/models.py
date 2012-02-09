@@ -581,21 +581,6 @@ class LayerManager(models.Manager):
         # Make sure to logout after you have finished using it.
         return self.geonetwork
 
-    def admin_contact(self):
-        # this assumes there is at least one superuser
-        superusers = User.objects.filter(is_superuser=True).order_by('id')
-        if superusers.count() == 0:
-            raise RuntimeError('GeoNode needs at least one admin/superuser set')
-        
-        contact, created = Contact.objects.get_or_create(user=superusers[0], 
-                                                defaults={"name": "Geonode Admin"})
-        return contact
-
-    def default_poc(self):
-        return self.admin_contact()
-
-    def default_metadata_author(self):
-        return self.admin_contact()
 
     def slurp(self, ignore_errors=True, verbosity=1, console=sys.stdout):
         """Configure the layers available in GeoServer in GeoNode.
@@ -664,7 +649,7 @@ class Resource(models.Model, PermissionLevelMixin):
     uuid = models.CharField(max_length=36)
     owner = models.ForeignKey(User, blank=True, null=True)
     last_modified = models.DateTimeField(auto_now_add=True)
-    contacts = models.ManyToManyField(Contact, through='ContactRole')
+    contacts = models.ManyToManyField(Contact, through='ContactRole', null=True, blank=True)
 
     # section 1
     title = models.CharField(_('title'), max_length=255)
@@ -721,6 +706,12 @@ class Resource(models.Model, PermissionLevelMixin):
         if self.owner:
             self.set_user_level(self.owner, self.LEVEL_ADMIN)
 
+    def default_poc(self):
+        return self.admin_contact()
+
+    def default_metadata_author(self):
+        return self.admin_contact()
+
     @property
     def poc_role(self):
         role = Role.objects.get(value='pointOfContact')
@@ -761,6 +752,29 @@ class Resource(models.Model, PermissionLevelMixin):
         return the_ma
 
     metadata_author = property(_get_metadata_author, _set_metadata_author)
+
+    def admin_contact(self):
+        # this assumes there is at least one superuser
+        superusers = User.objects.filter(is_superuser=True).order_by('id')
+        if superusers.count() == 0:
+            raise RuntimeError('GeoNode needs at least one admin/superuser set')
+        
+        contact, created = Contact.objects.get_or_create(user=superusers[0], 
+                                                defaults={"name": "Geonode Admin"})
+        return contact
+
+    def _autopopulate(self):
+        """
+        if self.poc is None:
+            self.poc = self.default_poc()
+        if self.metadata_author is None:
+            self.metadata_author = self.default_metadata_author()
+        if self.abstract == '' or self.abstract is None:
+            self.abstract = 'No abstract provided'
+        if self.title == '' or self.title is None:
+            self.title = self.name
+        """
+        pass
 
 
 class Layer(Resource):
@@ -1099,16 +1113,6 @@ class Layer(Resource):
         srs = gs_resource.projection
         if self.geographic_bounding_box is '' or self.geographic_bounding_box is None:
             self.set_bbox(gs_resource.native_bbox, srs=srs)
-
-    def _autopopulate(self):
-        if self.poc is None:
-            self.poc = Layer.objects.default_poc()
-        if self.metadata_author is None:
-            self.metadata_author = Layer.objects.default_metadata_author()
-        if self.abstract == '' or self.abstract is None:
-            self.abstract = 'No abstract provided'
-        if self.title == '' or self.title is None:
-            self.title = self.name
 
     def _populate_from_gn(self):
         meta = self.metadata_csw()

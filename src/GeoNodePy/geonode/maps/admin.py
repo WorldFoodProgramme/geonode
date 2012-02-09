@@ -14,8 +14,8 @@ class ContactRoleInline(admin.TabularInline):
 class ContactRoleAdmin(admin.ModelAdmin):
     model = ContactRole
     list_display_links = ('id',)
-    list_display = ('id','contact', 'layer', 'role')
-    list_editable = ('contact', 'layer', 'role')
+    list_display = ('id','contact', 'resource', 'role')
+    list_editable = ('contact', 'resource', 'role')
 
 class MapAdmin(admin.ModelAdmin):
     inlines = [MapLayerInline,]
