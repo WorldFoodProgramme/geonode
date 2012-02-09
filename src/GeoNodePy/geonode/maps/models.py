@@ -658,12 +658,13 @@ class LayerManager(models.Manager):
 
 class Resource(models.Model, PermissionLevelMixin):
     """
-    Abstract Base Class for Resources
+    Base Class for Resources
     Loosely based on ISO 19115:2003
     """
     uuid = models.CharField(max_length=36)
     owner = models.ForeignKey(User, blank=True, null=True)
     last_modified = models.DateTimeField(auto_now_add=True)
+    contacts = models.ManyToManyField(Contact, through='ContactRole')
 
     # section 1
     title = models.CharField(_('title'), max_length=255)
@@ -706,9 +707,6 @@ class Resource(models.Model, PermissionLevelMixin):
     # Section 9
     # see metadata_author property definition below
 
-    class Meta:
-        abstract = True
-
     def set_default_permissions(self):
         self.set_gen_level(ANONYMOUS_USERS, self.LEVEL_READ)
         self.set_gen_level(AUTHENTICATED_USERS, self.LEVEL_READ) 
@@ -723,6 +721,47 @@ class Resource(models.Model, PermissionLevelMixin):
         if self.owner:
             self.set_user_level(self.owner, self.LEVEL_ADMIN)
 
+    @property
+    def poc_role(self):
+        role = Role.objects.get(value='pointOfContact')
+        return role
+
+    @property
+    def metadata_author_role(self):
+        role = Role.objects.get(value='author')
+        return role
+
+    def _set_poc(self, poc):
+        # reset any poc asignation to this resource 
+        ContactRole.objects.filter(role=self.poc_role, resource=self).delete()
+        #create the new assignation
+        contact_role = ContactRole.objects.create(role=self.poc_role, resource=self, contact=poc)
+
+    def _get_poc(self):
+        try:
+            the_poc = ContactRole.objects.get(role=self.poc_role, resource=self).contact
+        except ContactRole.DoesNotExist:
+            the_poc = None
+        return the_poc
+
+    poc = property(_get_poc, _set_poc)
+
+    def _set_metadata_author(self, metadata_author):
+        # reset any metadata_author asignation to this resource
+        ContactRole.objects.filter(role=self.metadata_author_role, resource=self).delete()
+        #create the new assignation
+        contact_role = ContactRole.objects.create(role=self.metadata_author_role,
+                                                  resource=self, contact=metadata_author)
+
+    def _get_metadata_author(self):
+        try:
+            the_ma = ContactRole.objects.get(role=self.metadata_author_role, resource=self).contact
+        except  ContactRole.DoesNotExist:
+            the_ma = None
+        return the_ma
+
+    metadata_author = property(_get_metadata_author, _set_metadata_author)
+
 
 class Layer(Resource):
     """
@@ -736,8 +775,6 @@ class Layer(Resource):
     storeType = models.CharField(max_length=128)
     name = models.CharField(max_length=128)
     typename = models.CharField(max_length=128, unique=True)
-
-    contacts = models.ManyToManyField(Contact, through='ContactRole')
 
     def download_links(self):
         """Returns a list of (mimetype, URL) tuples for downloads of this data
@@ -1036,47 +1073,6 @@ class Layer(Resource):
             cat = Layer.objects.gs_catalog
             self._publishing_cache = cat.get_layer(self.name)
         return self._publishing_cache
-
-    @property
-    def poc_role(self):
-        role = Role.objects.get(value='pointOfContact')
-        return role
-
-    @property
-    def metadata_author_role(self):
-        role = Role.objects.get(value='author')
-        return role
-
-    def _set_poc(self, poc):
-        # reset any poc asignation to this layer
-        ContactRole.objects.filter(role=self.poc_role, layer=self).delete()
-        #create the new assignation
-        contact_role = ContactRole.objects.create(role=self.poc_role, layer=self, contact=poc)
-
-    def _get_poc(self):
-        try:
-            the_poc = ContactRole.objects.get(role=self.poc_role, layer=self).contact
-        except ContactRole.DoesNotExist:
-            the_poc = None
-        return the_poc
-
-    poc = property(_get_poc, _set_poc)
-
-    def _set_metadata_author(self, metadata_author):
-        # reset any metadata_author asignation to this layer
-        ContactRole.objects.filter(role=self.metadata_author_role, layer=self).delete()
-        #create the new assignation
-        contact_role = ContactRole.objects.create(role=self.metadata_author_role,
-                                                  layer=self, contact=metadata_author)
-
-    def _get_metadata_author(self):
-        try:
-            the_ma = ContactRole.objects.get(role=self.metadata_author_role, layer=self).contact
-        except  ContactRole.DoesNotExist:
-            the_ma = None
-        return the_ma
-
-    metadata_author = property(_get_metadata_author, _set_metadata_author)
 
     def save_to_geoserver(self):
         if self.resource is None:
@@ -1592,31 +1588,31 @@ class ContactRole(models.Model):
     ContactRole is an intermediate model to bind Contacts and Layers and apply roles.
     """
     contact = models.ForeignKey(Contact)
-    layer = models.ForeignKey(Layer)
+    resource = models.ForeignKey(Resource)
     role = models.ForeignKey(Role)
 
     def clean(self):
         """
-        Make sure there is only one poc and author per layer
+        Make sure there is only one poc and author per resource 
         """
-        if (self.role == self.layer.poc_role) or (self.role == self.layer.metadata_author_role):
-            contacts = self.layer.contacts.filter(contactrole__role=self.role)
+        if (self.role == self.resource.poc_role) or (self.role == self.resource.metadata_author_role):
+            contacts = self.resource.contacts.filter(contactrole__role=self.role)
             if contacts.count() == 1:
                  # only allow this if we are updating the same contact
                  if self.contact != contacts.get():
-                     raise ValidationError('There can be only one %s for a given layer' % self.role)
+                     raise ValidationError('There can be only one %s for a given resource' % self.role)
         if self.contact.user is None:
-            # verify that any unbound contact is only associated to one layer
+            # verify that any unbound contact is only associated to one resource 
             bounds = ContactRole.objects.filter(contact=self.contact).count()
             if bounds > 1:
-                raise ValidationError('There can be one and only one layer linked to an unbound contact' % self.role)
+                raise ValidationError('There can be one and only one resource linked to an unbound contact' % self.role)
             elif bounds == 1:
                 # verify that if there was one already, it corresponds to this instace
                 if ContactRole.objects.filter(contact=self.contact).get().id != self.id:
-                    raise ValidationError('There can be one and only one layer linked to an unbound contact' % self.role)
+                    raise ValidationError('There can be one and only one resource linked to an unbound contact' % self.role)
 
     class Meta:
-        unique_together = (("contact", "layer", "role"),)
+        unique_together = (("contact", "resource", "role"),)
 
 def delete_layer(instance, sender, **kwargs): 
     """
