@@ -900,25 +900,6 @@ class Layer(Resource):
         global _wms
         if (_wms is None) or (self.typename not in _wms.contents):
             get_wms()
-            """
-            wms_url = "%swms?request=GetCapabilities" % settings.GEOSERVER_BASE_URL
-            netloc = urlparse(wms_url).netloc
-            http = httplib2.Http()
-            http.add_credentials(_user, _password)
-            http.authorizations.append(
-                httplib2.BasicAuthentication(
-                    (_user, _password), 
-                    netloc,
-                    wms_url,
-                    {},
-                    None,
-                    None, 
-                    http
-                )
-            )
-            response, body = http.request(wms_url)
-            _wms = WebMapService(wms_url, xml=body)
-            """
         return _wms[self.typename]
 
     def metadata_csw(self):
