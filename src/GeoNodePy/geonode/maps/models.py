@@ -641,7 +641,7 @@ class LayerManager(models.Manager):
         return output
 
 
-class Resource(models.Model, PermissionLevelMixin):
+class ResourceBase(models.Model, PermissionLevelMixin):
     """
     Base Class for Resources
     Loosely based on ISO 19115:2003
@@ -777,7 +777,7 @@ class Resource(models.Model, PermissionLevelMixin):
         pass
 
 
-class Layer(Resource):
+class Layer(ResourceBase):
     """
     Layer Class inheriting Resource fields
     """
@@ -1166,7 +1166,7 @@ class Layer(Resource):
     LEVEL_ADMIN = 'layer_admin'
                  
 
-class Map(Resource):
+class Map(ResourceBase):
     """
     Map Class
     
@@ -1592,7 +1592,7 @@ class ContactRole(models.Model):
     ContactRole is an intermediate model to bind Contacts and Layers and apply roles.
     """
     contact = models.ForeignKey(Contact)
-    resource = models.ForeignKey(Resource)
+    resource = models.ForeignKey(ResourceBase)
     role = models.ForeignKey(Role)
 
     def clean(self):
