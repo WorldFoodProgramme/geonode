@@ -122,6 +122,7 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.core.context_processors.debug",
     "django.core.context_processors.i18n",
     "django.core.context_processors.media",
+    "django.core.context_processors.request",
     "geonode.maps.context_processors.resource_urls",
 )
 
@@ -224,11 +225,14 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'django.contrib.admin',
     'django.contrib.sitemaps',
+    
     'staticfiles',
     'django_extensions',
     'registration',
     'profiles',
     'avatar',
+    'agon_ratings',
+    
     'south',
     'geonode.core',
     'geonode.maps',
@@ -268,6 +272,17 @@ DB_DATASTORE_TYPE=''
 SOUTH_MIGRATION_MODULES = {
     'registration': 'geonode.migrations.registration',
     'avatar': 'geonode.migrations.avatar',
+}
+
+
+# Agon Ratings
+AGON_RATINGS_CATEGORY_CHOICES = {
+  "maps.Map": {
+    "map": "How good is this map?"
+  },
+  "maps.Layer": {
+    "layer": "How good is this layer?"
+  },
 }
 
 try:
