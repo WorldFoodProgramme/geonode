@@ -6,6 +6,7 @@ from geoserver.catalog import Catalog
 from geonode.core.models import PermissionLevelMixin
 from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
 from geonode.catalogue.catalogue import Catalogue
+from geonode.catalogue.models import ResourceBase
 from django.db.models import signals
 from django.utils.html import escape
 import httplib2
@@ -669,44 +670,6 @@ class Layer(models.Model, PermissionLevelMixin):
 
     metadata_uploaded = models.BooleanField(default=False)
     metadata_xml = models.TextField(null=True, default=None, blank=True)
-
-    # section 1
-    title = models.CharField(_('title'), max_length=255)
-    date = models.DateTimeField(_('date'), default = datetime.now) # passing the method itself, not the result
-    
-    date_type = models.CharField(_('date type'), max_length=255, choices=VALID_DATE_TYPES, default='publication')
-
-    edition = models.CharField(_('edition'), max_length=255, blank=True, null=True)
-    abstract = models.TextField(_('abstract'), blank=True)
-    purpose = models.TextField(_('purpose'), null=True, blank=True)
-    maintenance_frequency = models.CharField(_('maintenance frequency'), max_length=255, choices = [(x, x) for x in UPDATE_FREQUENCIES], blank=True, null=True)
-
-    # section 2
-    # see poc property definition below
-
-    # section 3
-    keywords = models.TextField(_('keywords (comma-separated)'), blank=True, null=True)
-    keywords_region = models.CharField(_('keywords region'), max_length=3, choices= COUNTRIES, default = 'USA')
-    constraints_use = models.CharField(_('constraints use'), max_length=255, choices = [(x, x) for x in CONSTRAINT_OPTIONS], default='copyright')
-    constraints_other = models.TextField(_('constraints other'), blank=True, null=True)
-    spatial_representation_type = models.CharField(_('spatial representation type'), max_length=255, choices=[(x,x) for x in SPATIAL_REPRESENTATION_TYPES], blank=True, null=True)
-
-    # Section 4
-    language = models.CharField(_('language'), max_length=3, choices=ALL_LANGUAGES, default='eng')
-    topic_category = models.CharField(_('topic_category'), max_length=255, choices = [(x, x) for x in TOPIC_CATEGORIES], default = 'location')
-
-    # Section 5
-    temporal_extent_start = models.DateField(_('temporal extent start'), blank=True, null=True)
-    temporal_extent_end = models.DateField(_('temporal extent end'), blank=True, null=True)
-    geographic_bounding_box = models.TextField(_('geographic bounding box'))
-    supplemental_information = models.TextField(_('supplemental information'), default=DEFAULT_SUPPLEMENTAL_INFORMATION)
-
-    # Section 6
-    distribution_url = models.TextField(_('distribution URL'), blank=True, null=True)
-    distribution_description = models.TextField(_('distribution description'), blank=True, null=True)
-
-    # Section 8
-    data_quality_statement = models.TextField(_('data quality statement'), blank=True, null=True)
 
     # Section 9
     # see metadata_author property definition below
