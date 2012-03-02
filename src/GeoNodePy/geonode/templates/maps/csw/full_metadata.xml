@@ -217,10 +217,15 @@
        <gmd:characterSet>
          <gmd:MD_CharacterSetCode codeSpace="ISOTC211/19115" codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_CharacterSetCode" codeListValue="utf8">utf8</gmd:MD_CharacterSetCode>
        </gmd:characterSet>
+<<<<<<< HEAD
        <gmd:topicCategory {% if not layer.topic_category %}gco:nilReason="missing"{% endif %}>
          {% if layer.topic_category %}
          <gmd:MD_TopicCategoryCode>{{layer.topic_category}}</gmd:MD_TopicCategoryCode>
          {% endif %}
+=======
+       <gmd:topicCategory>
+         <gmd:MD_TopicCategoryCode>{{layer.topic_category}}</gmd:MD_TopicCategoryCode>
+>>>>>>> 0abde87879dd54cc49fc548d9b04ed114aec5e11
        </gmd:topicCategory>
        <gmd:extent>
          <gmd:EX_Extent>

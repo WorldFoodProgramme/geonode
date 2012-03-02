@@ -1,0 +1,7 @@
+{% if layer.metadata_uploaded == 1 %}
+    {% autoescape off %}
+    {{ layer.metadata_xml }}
+    {% endautoescape %}
+{% else %}
+    {% include "maps/csw/iso_19139.xml" %}
+{% endif %}
