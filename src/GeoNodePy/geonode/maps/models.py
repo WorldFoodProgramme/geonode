@@ -641,7 +641,7 @@ class LayerManager(models.Manager):
         return output
 
 
-class Resource(models.Model, PermissionLevelMixin):
+class ResourceBase(models.Model, PermissionLevelMixin):
     """
     Base Class for Resources
     Loosely based on ISO 19115:2003
@@ -777,7 +777,7 @@ class Resource(models.Model, PermissionLevelMixin):
         pass
 
 
-class Layer(Resource):
+class Layer(ResourceBase):
     """
     Layer Class inheriting Resource fields
     """
@@ -820,7 +820,7 @@ class Layer(Resource):
                     'typename': self.typename,
                     'outputFormat': mime
                 }
-                params.extend(extra_params)
+                params.update(extra_params)
                 return settings.GEOSERVER_BASE_URL + "wfs?" + urllib.urlencode(params)
 
             types = [
@@ -1621,7 +1621,7 @@ class ContactRole(models.Model):
     ContactRole is an intermediate model to bind Contacts and Layers and apply roles.
     """
     contact = models.ForeignKey(Contact)
-    resource = models.ForeignKey(Resource)
+    resource = models.ForeignKey(ResourceBase)
     role = models.ForeignKey(Role)
 
     def clean(self):
