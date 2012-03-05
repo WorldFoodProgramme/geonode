@@ -474,6 +474,16 @@ def save(layer, base_file, user, overwrite = True, title=None,
     # add to CSW catalogue
     saved_layer.save_to_catalogue()
 
+#    # save an XML document anyway
+#    tpl = get_template('maps/csw/full_metadata.xml')
+#    ctx = Context({
+#        'layer': saved_layer,
+#        'SITEURL': settings.SITEURL[:-1],
+#        })
+#        md_doc = tpl.render(ctx)
+#        md_doc = md_doc.encode("utf-8")
+#    saved_layer.metadata_xml = md_doc
+
     # Step 11. Set default permissions on the newly created layer
     # FIXME: Do this as part of the post_save hook
     logger.info('>>> Step 11. Setting default permissions for [%s]', name)
