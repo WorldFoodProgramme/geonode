@@ -953,7 +953,7 @@ def layer_replace(request, layername):
                 saved_layer = save(layer, base_file, request.user, overwrite=True)
                 return HttpResponse(json.dumps({
                     "success": True,
-                    "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
+                    "redirect_to": reverse('layer_metadata', args=[saved_layer.typename])}))
             except Exception, e:
                 logger.exception("Unexpected error during upload.")
                 return HttpResponse(json.dumps({
