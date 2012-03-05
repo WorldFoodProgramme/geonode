@@ -1166,14 +1166,20 @@ class Layer(Resource):
     LEVEL_ADMIN = 'layer_admin'
                  
 
-class Map(Resource):
+class Map(models.Model, PermissionLevelMixin):
     """
-    Map Class
-    
     A Map aggregates several layers together and annotates them with a viewport
-    configuration. 
+    configuration.
+    """
 
-    Inherits many fields from Resource class
+    title = models.TextField(_('Title'))
+    """
+    A display name suitable for search results and page headers
+    """
+
+    abstract = models.TextField(_('Abstract'))
+    """
+    A longer description of the themes in the map.
     """
 
     # viewer configuration
@@ -1199,6 +1205,16 @@ class Map(Resource):
     """
     The y coordinate to center on when loading this map.  Its interpretation
     depends on the projection.
+    """
+
+    owner = models.ForeignKey(User, verbose_name=_('owner'), blank=True, null=True)
+    """
+    The user that created/owns this map.
+    """
+
+    last_modified = models.DateTimeField(auto_now_add=True)
+    """
+    The last time the map was modified.
     """
 
     def __unicode__(self):
@@ -1378,6 +1394,19 @@ class Map(Resource):
     LEVEL_WRITE = 'map_readwrite'
     LEVEL_ADMIN = 'map_admin'
     
+    def set_default_permissions(self):
+        self.set_gen_level(ANONYMOUS_USERS, self.LEVEL_READ)
+        self.set_gen_level(AUTHENTICATED_USERS, self.LEVEL_READ)
+
+        # remove specific user permissions
+        current_perms =  self.get_all_level_info()
+        for username in current_perms['users'].keys():
+            user = User.objects.get(username=username)
+            self.set_user_level(user, self.LEVEL_NONE)
+
+        # assign owner admin privs
+        if self.owner:
+            self.set_user_level(self.owner, self.LEVEL_ADMIN)  
 
 class MapLayerManager(models.Manager):
     def from_viewer_config(self, map, layer, source, ordering):
