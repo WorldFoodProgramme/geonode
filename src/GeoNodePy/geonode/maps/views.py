@@ -31,6 +31,7 @@ from django.forms.models import inlineformset_factory
 from django.db.models import Q
 import logging
 from geonode.maps.utils import forward_mercator
+from geonode.catalogue.catalogue import gen_iso_xml, gen_anytext
 
 logger = logging.getLogger("geonode.maps.views")
 
@@ -88,7 +89,7 @@ class LayerForm(forms.ModelForm):
 
     class Meta:
         model = Layer
-        exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename', 'metadata_uploaded', 'metadata_xml')
+        exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename', 'metadata_uploaded', 'metadata_xml', 'csw_typename', 'csw_schema', 'csw_mdsource', 'csw_anytext')
 
 class RoleForm(forms.ModelForm):
     class Meta:
@@ -731,6 +732,9 @@ def layer_metadata(request, layername):
                 the_layer = layer_form.save(commit=False)
                 the_layer.poc = new_poc
                 the_layer.metadata_author = new_author
+                xml_doc = gen_iso_xml(the_layer)
+                the_layer.metadata_xml=xml_doc
+                the_layer.csw_anytext = gen_anytext(xml_doc)
                 the_layer.save()
                 return HttpResponseRedirect("/data/" + layer.typename)
 
@@ -821,8 +825,6 @@ def layer_detail(request, layername):
             RequestContext(request, {'error_message': 
                 _("You are not permitted to view this layer")})), status=401)
     
-    metadata = layer.metadata_csw()
-
     maplayer = MapLayer(name = layer.typename, ows_url = settings.GEOSERVER_BASE_URL + "wms")
 
     # center/zoom don't matter; the viewer will center on the layer bounds
@@ -831,7 +833,7 @@ def layer_detail(request, layername):
 
     return render_to_response('maps/layer.html', RequestContext(request, {
         "layer": layer,
-        "metadata": metadata,
+        "uuid": layer.uuid,
         "viewer": json.dumps(map.viewer_json(* (DEFAULT_BASE_LAYERS + [maplayer]))),
         "permissions_json": _perms_info_json(layer, LAYER_LEV_NAMES),
         "GEOSERVER_BASE_URL": settings.GEOSERVER_BASE_URL,
@@ -872,7 +874,7 @@ def upload_layer(request):
                 else:
                     return HttpResponse(json.dumps({
                         "success": True,
-                        "redirect_to": saved_layer.get_absolute_url() + "?describe"}))
+                        "redirect_to": saved_layer.get_absolute_url() + "/metadata"}))
             except Exception, e:
                 logger.exception("Unexpected error during upload.")
                 return HttpResponse(json.dumps({

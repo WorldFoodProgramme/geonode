@@ -33,6 +33,8 @@ import geoserver
 from geoserver.catalog import FailedRequestError
 from geoserver.resource import FeatureType, Coverage
 
+# CSW functionality
+from geonode.catalogue.catalogue import gen_iso_xml, gen_anytext
 
 logger = logging.getLogger('geonode.maps.utils')
 _separator = '\n' + ('-' * 100) + '\n'
@@ -471,18 +473,16 @@ def save(layer, base_file, user, overwrite = True, title=None,
         saved_layer.abstract = md_abstract
         saved_layer.metadata_uploaded = True
 
-    # add to CSW catalogue
-    saved_layer.save_to_catalogue()
+#    # add to CSW catalogue
+#    saved_layer.save_to_catalogue()
 
-#    # save an XML document anyway
-#    tpl = get_template('maps/csw/full_metadata.xml')
-#    ctx = Context({
-#        'layer': saved_layer,
-#        'SITEURL': settings.SITEURL[:-1],
-#        })
-#        md_doc = tpl.render(ctx)
-#        md_doc = md_doc.encode("utf-8")
-#    saved_layer.metadata_xml = md_doc
+    # save XML doc
+    xml_doc = gen_iso_xml(saved_layer)
+    Layer.objects.filter(uuid=layer_uuid).update(metadata_xml=xml_doc)
+
+    # grab anytext
+    Layer.objects.filter(uuid=layer_uuid).update(csw_anytext=gen_anytext(xml_doc))
+    #saved_layer.anytext = gen_anytext(xml_doc)
 
     # Step 11. Set default permissions on the newly created layer
     # FIXME: Do this as part of the post_save hook

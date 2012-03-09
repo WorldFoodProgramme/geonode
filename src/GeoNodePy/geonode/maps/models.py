@@ -5,7 +5,7 @@ from owslib.wms import WebMapService
 from geoserver.catalog import Catalog
 from geonode.core.models import PermissionLevelMixin
 from geonode.core.models import AUTHENTICATED_USERS, ANONYMOUS_USERS
-from geonode.catalogue.catalogue import Catalogue
+from geonode.catalogue.catalogue import Catalogue, gen_iso_xml, gen_anytext
 from django.db.models import signals
 from django.utils.html import escape
 import httplib2
@@ -467,6 +467,25 @@ CONTACT_FIELDS = [
     "role"
 ]
 
+TYPE_VALUES = [
+    "series",
+    "software",
+    "featureType",
+    "model",
+    "collectionHardware",
+    "collectionSession",
+    "nonGeographicDataset",
+    "propertyType",
+    "fieldSession",
+    "dataset",
+    "service",
+    "attribute",
+    "attributeType",
+    "tile",
+    "feature",
+    "dimensionGroup"
+]
+
 DEFAULT_SUPPLEMENTAL_INFORMATION=_(
 'You can customize the template to suit your \
 needs. You can add and remove fields and fill out default \
@@ -605,7 +624,9 @@ class LayerManager(models.Manager):
                     "abstract": resource.abstract or 'No abstract provided',
                     "uuid": str(uuid.uuid4())
                 })
-
+                md_doc = gen_iso_xml(layer)
+                layer.metadata_xml = md_doc
+                layer.csw_anytext = gen_anytext(md_doc)
                 layer.save()
             except Exception, e:
                 if ignore_errors:
@@ -648,6 +669,11 @@ class ResourceBase(models.Model, PermissionLevelMixin):
     metadata_uploaded = models.BooleanField(default=False)
     metadata_xml = models.TextField(null=True, default=None, blank=True)
 
+    csw_typename = models.CharField(_('CSW typename'), max_length=32, default='gmd:MD_Metadata', null=False)
+    csw_schema = models.CharField(_('CSW schema'), max_length=32, default='http://www.isotc211.org/2005/gmd', null=False)
+    csw_mdsource = models.CharField(_('CSW source'), max_length=256, default='local', null=False)
+    csw_insert_date = models.DateTimeField(_('CSW insert date'), auto_now_add=True)
+    
     # section 1
     title = models.CharField(_('title'), max_length=255)
     date = models.DateTimeField(_('date'), default = datetime.now) # passing the method itself, not the result
@@ -657,16 +683,17 @@ class ResourceBase(models.Model, PermissionLevelMixin):
     edition = models.CharField(_('edition'), max_length=255, blank=True, null=True)
     abstract = models.TextField(_('abstract'), blank=True)
     purpose = models.TextField(_('purpose'), null=True, blank=True)
-    maintenance_frequency = models.CharField(_('maintenance frequency'), max_length=255, choices = [(x, x) for x in UPDATE_FREQUENCIES], blank=True, null=True)
+    maintenance_frequency = models.CharField(_('maintenance frequency'), max_length=255, choices=[(x, x) for x in UPDATE_FREQUENCIES], blank=True, null=True)
 
     # section 2
     # see poc property definition below
 
     # section 3
     keywords = models.TextField(_('keywords (comma-separated)'), blank=True, null=True)
-    keywords_region = models.CharField(_('keywords region'), max_length=3, choices= COUNTRIES, default = 'USA')
-    constraints_use = models.CharField(_('constraints use'), max_length=255, choices = [(x, x) for x in CONSTRAINT_OPTIONS], default='copyright')
+    keywords_region = models.CharField(_('keywords region'), max_length=3, choices= COUNTRIES, default='USA')
+    constraints_use = models.CharField(_('constraints use'), max_length=255, choices=[(x, x) for x in CONSTRAINT_OPTIONS], default='copyright')
     constraints_other = models.TextField(_('constraints other'), blank=True, null=True)
+    constraints_access = models.TextField(_('constraints access'), blank=True, null=True)
     spatial_representation_type = models.CharField(_('spatial representation type'), max_length=255, choices=[(x,x) for x in SPATIAL_REPRESENTATION_TYPES], blank=True, null=True)
 
     # Section 4
@@ -688,6 +715,19 @@ class ResourceBase(models.Model, PermissionLevelMixin):
 
     # Section 9
     # see metadata_author property definition below
+
+    # extra fields
+    publisher = models.CharField(_('publisher'), max_length=128, blank=True, null=True)
+    creator = models.CharField(_('creator'), max_length=128, blank=True, null=True)
+    csw_type = models.CharField(_('type'), max_length=32, default='dataset', null=False, choices=[(x, x) for x in TYPE_VALUES])
+    csw_anytext = models.TextField(_('anytext'), null=False)
+    
+
+
+
+
+    def datetime2iso(self):
+        self.last_modified.strftime('%Y-%m-%dT%H:%M:%SZ')
 
     def eval_keywords_region(self):
         """Returns expanded keywords_region tuple'd value"""
@@ -801,7 +841,6 @@ class ResourceBase(models.Model, PermissionLevelMixin):
         """
         pass
 
-
 class Layer(ResourceBase):
     """
     Layer Class inheriting Resource fields
@@ -856,7 +895,7 @@ class Layer(ResourceBase):
                 ("excel", _("Excel"), "excel", {}),
                 ("json", _("GeoJSON"), "json", {})
             ]
-            links.extend((ext, name, wfs_link(mime, extra_params)) for ext, name, mime, extra_params in types)
+            links.extend((ext, name, 'WWW:DOWNLOAD-1.0-http--download', wfs_link(mime, extra_params)) for ext, name, mime, extra_params in types)
         elif self.resource.resource_type == "coverage":
             try:
                 client = httplib2.Http()
@@ -887,7 +926,7 @@ class Layer(ResourceBase):
                     })
 
                 types = [("tiff", "GeoTIFF", "geotiff")]
-                links.extend([(ext, name, wcs_link(mime)) for (ext, name, mime) in types])
+                links.extend([(ext, name, 'WWW:DOWNLOAD-1.0-http--download', wcs_link(mime)) for (ext, name, mime) in types])
             except Exception, e:
                 # if something is wrong with WCS we probably don't want to link
                 # to it anyway
@@ -912,7 +951,7 @@ class Layer(ResourceBase):
             ("png", _("PNG"), "image/png")
         ]
 
-        links.extend((ext, name, wms_link(mime)) for ext, name, mime in types)
+        links.extend((ext, name, 'WWW:DOWNLOAD-1.0-http--download', wms_link(mime)) for ext, name, mime in types)
 
         kml_reflector_link_download = settings.GEOSERVER_BASE_URL + "wms/kml?" + urllib.urlencode({
             'layers': self.typename,
@@ -924,8 +963,8 @@ class Layer(ResourceBase):
             'mode': "refresh"
         })
 
-        links.append(("KML", _("KML"), kml_reflector_link_download))
-        links.append(("KML", _("View in Google Earth"), kml_reflector_link_view))
+        links.append(("KML", _("KML"), 'WWW:DOWNLOAD-1.0-http--download', kml_reflector_link_download))
+        links.append(("KML", _("View in Google Earth"), 'WWW:DOWNLOAD-1.0-http--download', kml_reflector_link_view))
 
         return links
 
@@ -959,22 +998,22 @@ class Layer(ResourceBase):
         #    raise GeoNodeException(msg)
  
         # Check the layer is in the catalogue and points back to get_absolute_url
-        if(_csw is None): # Might need to re-cache, nothing equivalent to _wms.contents?
-            get_csw()
-        try:
-            _csw.getrecordbyid([self.uuid], esn='summary', outputschema='http://www.isotc211.org/2005/gmd')
-            csw_layer = _csw.records.get(self.uuid)
-        except:
-            msg = "CSW Record Missing for layer [%s]" % self.typename
-            raise GeoNodeException(msg)
+#        if(_csw is None): # Might need to re-cache, nothing equivalent to _wms.contents?
+#            get_csw()
+#        try:
+#            _csw.getrecordbyid([self.uuid], esn='summary', outputschema='http://www.isotc211.org/2005/gmd')
+#            csw_layer = _csw.records.get(self.uuid)
+#        except:
+#            msg = "CSW Record Missing for layer [%s]" % self.typename
+#            raise GeoNodeException(msg)
 
-        if hasattr(csw_layer, 'distribution') and hasattr(csw_layer.distribution, 'online'):
-            for link in csw_layer.distribution.online:
-                if link.protocol == 'WWW:LINK-1.0-http--link':
-                    if(link.url != self.get_absolute_url()):
-                        msg = "CSW Layer URL does not match layer URL for layer [%s]" % self.typename
-        else:        
-            msg = "CSW Layer URL not found layer [%s]" % self.typename
+#        if hasattr(csw_layer, 'distribution') and hasattr(csw_layer.distribution, 'online'):
+#            for link in csw_layer.distribution.online:
+#                if link.protocol == 'WWW:LINK-1.0-http--link':
+#                    if(link.url != self.get_absolute_url()):
+#                        msg = "CSW Layer URL does not match layer URL for layer [%s]" % self.typename
+#        else:        
+#            msg = "CSW Layer URL not found layer [%s]" % self.typename
             
         # Visit get_absolute_url and make sure it does not give a 404
         #logger.info(self.get_absolute_url())
@@ -1701,10 +1740,10 @@ def post_save_layer(instance, sender, **kwargs):
     if kwargs['created']:
         instance._populate_from_gs()
 
-    instance.save_to_catalogue()
+#    instance.save_to_catalogue()
 
     if kwargs['created']:
-        instance._populate_from_catalogue()
+#        instance._populate_from_catalogue()
         instance.save(force_update=True)
 
 signals.pre_delete.connect(delete_layer, sender=Layer)

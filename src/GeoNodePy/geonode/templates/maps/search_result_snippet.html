@@ -38,7 +38,7 @@
 {% if layer_is_remote %}
   <p><b>{% trans "Download:" %}</b>
   {% for link in extra_links.download %}
-    <a href="{{link.2}}" class="download {{link.0}}">{{link.1}}</a>
+    <a href="{{link.3}}" class="download {{link.0}}">{{link.1}}</a>
   {% empty %}
   <em>{% trans "No download URLs are defined for this layer." %}</em>
   {% endfor %}
@@ -55,7 +55,7 @@
   {% if can_view %}
     <p><b>{% trans "Download:" %}</b>
     {% for link in layer.download_links %}
-      <a href="{{link.2}}" class="download {{link.0}}">{{link.1}}</a>
+      <a href="{{link.3}}" class="download {{link.0}}">{{link.1}}</a>
     {% empty %}
     <em>{% trans "No download URLs are defined for this layer." %}</em>
     {% endfor %}

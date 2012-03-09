@@ -6,7 +6,8 @@ from owslib.csw import CatalogueServiceWeb, namespaces
 from owslib.util import http_post, nspath
 from xml.dom import minidom
 from xml.etree.ElementTree import XML
-from xml.etree import ElementTree as etree
+#from xml.etree import ElementTree as etree
+from lxml import etree
 from urlparse import urlparse
 
 class Catalogue(CatalogueServiceWeb):
@@ -224,3 +225,20 @@ class Catalogue(CatalogueServiceWeb):
             raise Exception("No URL opener defined in geonetwork module!!")
         else:
             return self.opener.open(request)
+
+def gen_iso_xml(layer):
+    ''' Generate ISO XML document '''
+    tpl = get_template('maps/csw/full_metadata.xml')
+    ctx = Context({
+        'layer': layer,
+        'SITEURL': settings.SITEURL[:-1],
+        })
+    md_doc = tpl.render(ctx)
+    md_doc = md_doc.encode("utf-8")
+    return md_doc
+
+def gen_anytext(xml):
+    ''' get all element and attribute data from an XML document '''
+    xml = etree.fromstring(xml)
+    return '%s %s' % (' '.join([value for value in xml.xpath('//text()')]),
+    ' '.join([value for value in xml.xpath('//attribute::*')]))
