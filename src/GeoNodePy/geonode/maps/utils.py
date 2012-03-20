@@ -12,7 +12,7 @@ import traceback
 import inspect
 import string
 import urllib2
-from xml.etree import ElementTree as etree
+from lxml import etree
 import glob
 from itertools import cycle, izip
 
@@ -820,9 +820,9 @@ def update_metadata(layer_uuid, xml, saved_layer):
         http_link.text = '%s%s' % (settings.SITEURL, saved_layer.get_absolute_url())
         citeinfo.append(http_link)
 
-        for extension, dformat, link in saved_layer.download_links():
+        for extension, dformat, dtype, link in saved_layer.download_links():
             http_link = etree.Element('onlink')
-            http_link.attrib['type'] = 'WWW:DOWNLOAD-1.0-http--download'
+            http_link.attrib['type'] = dtype
             http_link.text = link
             citeinfo.append(http_link)
 
