@@ -27,7 +27,7 @@
 <script type="text/javascript">
 Ext.onReady(function(){
 {% autoescape off %}
-  var form_target = "{% url geonode.maps.views.layerController layer.typename %}?update";
+  var form_target = "{% url layer_replace layer.typename %}";
 
   var listeners = {
       "fileselected": function(cmp, value) {
