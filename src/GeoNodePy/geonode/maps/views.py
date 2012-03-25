@@ -89,7 +89,7 @@ class LayerForm(forms.ModelForm):
 
     class Meta:
         model = Layer
-        exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename', 'metadata_uploaded', 'metadata_xml', 'csw_typename', 'csw_schema', 'csw_mdsource', 'csw_anytext')
+        exclude = ('contacts','workspace', 'store', 'name', 'uuid', 'storeType', 'typename', 'metadata_uploaded', 'metadata_xml', 'csw_typename', 'csw_schema', 'csw_mdsource', 'csw_anytext', 'publisher', 'creator')
 
 class RoleForm(forms.ModelForm):
     class Meta:
