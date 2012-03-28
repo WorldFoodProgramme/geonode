@@ -35,6 +35,9 @@ from geoserver.resource import FeatureType, Coverage
 
 # CSW functionality
 from geonode.catalogue.catalogue import gen_iso_xml, gen_anytext
+from owslib.csw import CswRecord
+from owslib.iso import MD_Metadata
+from owslib.fgdc import Metadata
 
 logger = logging.getLogger('geonode.maps.utils')
 _separator = '\n' + ('-' * 100) + '\n'
@@ -473,6 +476,9 @@ def save(layer, base_file, user, overwrite = True, title=None,
         saved_layer.abstract = md_abstract
         saved_layer.metadata_uploaded = True
 
+        vals = set_metadata(md_xml, saved_layer)
+        Layer.objects.filter(uuid=layer_uuid).update(**vals)
+
 #    # add to CSW catalogue
 #    saved_layer.save_to_catalogue()
 
@@ -680,7 +686,8 @@ def update_metadata(layer_uuid, xml, saved_layer):
         tagname = exml.tag
 
     # update relevant XML
-    layer_updated = saved_layer.date.strftime('%Y-%m-%dT%H:%M:%SZ') 
+    #layer_updated = saved_layer.date.strftime('%Y-%m-%dT%H:%M:%SZ') 
+    layer_updated = saved_layer.date.strftime('%Y-%m-%d')
 
     if tagname != 'MD_Metadata' and settings.CSW['type'] != 'pycsw':
         raise GeoNodeException('Only ISO XML is supported')
@@ -713,12 +720,11 @@ def update_metadata(layer_uuid, xml, saved_layer):
         http_link.text = '%s%s' % (settings.SITEURL, saved_layer.get_absolute_url())
         children.insert(-2, http_link)
 
-        for extension, dformat, link in saved_layer.download_links():
-            http_link = etree.Element('%sreferences' % dct_ns, scheme='WWW:DOWNLOAD-1.0-http--download')
+        for extension, dformat, protocol, link in saved_layer.download_links():
+            http_link = etree.Element('%sreferences' % dct_ns, scheme=protocol)
             http_link.text = link
             children.insert(-2, http_link)
 
-        from owslib.csw import CswRecord
         # set django properties
         csw_exml = CswRecord(exml)
         md_title = csw_exml.title
@@ -774,14 +780,14 @@ def update_metadata(layer_uuid, xml, saved_layer):
         protocol = etree.SubElement(online2, '{%s}protocol' % gmd_ns)
         etree.SubElement(protocol, '{%s}CharacterString' % gco_ns).text = 'WWW:LINK-1.0-http--link'
 
-        for extension, dformat, link in saved_layer.download_links():
+        for extension, dformat, dprotocol, link in saved_layer.download_links():
             online = etree.SubElement(transopts2, '{%s}onLine' % gmd_ns)
             online2 = etree.SubElement(online, '{%s}CI_OnlineResource' % gmd_ns)
             linkage = etree.SubElement(online2, '{%s}linkage' % gmd_ns)
 
             etree.SubElement(linkage, '{%s}URL' % gmd_ns).text = link or ''
             protocol = etree.SubElement(online2, '{%s}protocol' % gmd_ns)
-            etree.SubElement(protocol, '{%s}CharacterString' % gco_ns).text = 'WWW:DOWNLOAD-1.0-http--download'
+            etree.SubElement(protocol, '{%s}CharacterString' % gco_ns).text = dprotocol
             lname = etree.SubElement(online2, '{%s}name' % gmd_ns)
             etree.SubElement(lname, '{%s}CharacterString' % gco_ns).text = extension or ''
             ldesc = etree.SubElement(online2, '{%s}description' % gmd_ns)
@@ -789,7 +795,6 @@ def update_metadata(layer_uuid, xml, saved_layer):
 
         children.insert(-2, distinfo)
 
-        from owslib.iso import MD_Metadata
         iso_exml = MD_Metadata(exml)
         md_title = iso_exml.identification.title
         md_abstract = iso_exml.identification.abstract
@@ -820,14 +825,13 @@ def update_metadata(layer_uuid, xml, saved_layer):
         http_link.text = '%s%s' % (settings.SITEURL, saved_layer.get_absolute_url())
         citeinfo.append(http_link)
 
-        for extension, dformat, dtype, link in saved_layer.download_links():
+        for extension, dformat, protocol, link in saved_layer.download_links():
             http_link = etree.Element('onlink')
-            http_link.attrib['type'] = dtype
+            http_link.attrib['type'] = protocol
             http_link.text = link
             citeinfo.append(http_link)
 
-        from owslib.fgdc import Metadata as FGDC_Metadata
-        fgdc_exml = FGDC_Metadata(exml)
+        fgdc_exml = Metadata(exml)
         md_title = fgdc_exml.idinfo.citation.citeinfo['title'] 
         md_abstract = fgdc_exml.idinfo.descript.abstract
 
@@ -835,6 +839,108 @@ def update_metadata(layer_uuid, xml, saved_layer):
         raise GeoNodeException('Unsupported metadata format')
 
     return [etree.tostring(exml), md_title, md_abstract]
+
+def set_metadata(xml, saved_layer):
+    """Parse and set metadata to GeoNode Django ORM"""
+
+    # check if document is XML
+    try:
+        exml = etree.fromstring(xml)
+    except Exception, err:
+        raise GeoNodeException('Uploaded XML document is not XML: %s' % str(err))
+
+    # check if document is an accepted XML metadata format
+    try:
+        tagname = exml.tag.split('}')[1]
+    except:
+        tagname = exml.tag
+
+    vals = {}
+    vals['csw_mdsource'] = 'local'
+
+    if tagname == 'MD_Metadata':
+        md = MD_Metadata(exml)
+
+        vals['csw_typename'] =  'gmd:MD_Metadata'
+        vals['csw_schema'] = 'http://www.isotc211.org/2005/gmd'
+        vals['language'] = md.language
+        vals['spatial_representation_type'] = md.hierarchy
+        vals['date'] = sniff_date(md.datestamp.strip())
+
+        if hasattr(md, 'identification'):
+            vals['temporal_extent_start'] = md.identification.temporalextent_start
+            vals['temporal_extent_end'] = md.identification.temporalextent_end
+
+            if len(md.identification.topiccategory) > 0:
+                vals['topic_category'] = md.identification.topiccategory[0]
+
+            if (hasattr(md.identification, 'keywords') and
+            len(md.identification.keywords) > 0):
+                if None not in md.identification.keywords[0]['keywords']:
+                    vals['keywords'] = ','.join(md.identification.keywords[0]['keywords'])
+
+            if hasattr(md.identification, 'creator'):
+                vals['creator'] = md.identification.creator
+            if hasattr(md.identification, 'publisher'):
+                vals['publisher'] = md.identification.publisher
+
+            if len(md.identification.securityconstraints) > 0:
+                vals['constraints_use'] = md.identification.securityconstraints[0]
+            if len(md.identification.accessconstraints) > 0:
+                vals['constraints_access'] = md.identification.accessconstraints[0]
+            if len(md.identification.otherconstraints) > 0:
+                vals['constraints_other'] = md.identification.otherconstraints[0]
+
+            vals['purpose'] = md.identification.purpose
+
+        if hasattr(md.identification, 'dataquality'):     
+            vals['data_quality_statement'] = md.dataquality.lineage
+
+    elif tagname == 'metadata':  # FGDC
+        md = Metadata(exml)
+
+        vals['csw_typename'] = 'fgdc:metadata'
+        vals['csw_schema'] = 'http://www.opengis.net/cat/csw/csdgm'
+        vals['spatial_representation_type'] = md.idinfo.citation.citeinfo['geoform']
+
+        if hasattr(md.idinfo, 'keywords'):
+            if md.idinfo.keywords.theme:
+                vals['keywords'] = ','.join(md.idinfo.keywords.theme[0]['themekey'])
+
+        if hasattr(md.idinfo.timeperd, 'timeinfo'):
+            if hasattr(md.idinfo.timeperd.timeinfo, 'rngdates'):
+                vals['temporal_extent_start'] = sniff_date(md.idinfo.timeperd.timeinfo.rngdates.begdate.strip())
+                vals['temporal_extent_end'] = sniff_date(md.idinfo.timeperd.timeinfo.rngdates.enddate.strip())
+
+        if hasattr(md.idinfo, 'origin'):
+            vals['creator'] = md.idinfo.origin
+            vals['publisher'] = md.idinfo.origin
+
+        vals['constraints_access'] = md.idinfo.accconst
+        vals['constraints_other'] = md.idinfo.useconst
+        #vals['date'] = sniff_date(md.metainfo.metd.strip())
+        vals['date'] = '2012-01-23'
+
+    elif tagname == 'Record':  # Dublin Core
+        md = CswRecord(exml)
+
+	vals['csw_typename'] = 'csw:Record'
+	vals['csw_schema'] = 'http://www.opengis.net/cat/csw/2.0.2'
+	vals['language'] = md.language
+	vals['spatial_representation_type'] = md.type
+	vals['keywords'] = ','.join(md.subjects)
+	vals['temporal_extent_start'] = md.temporal
+	vals['temporal_extent_end'] = md.temporal
+	vals['creator'] = md.creator
+	vals['publisher'] = md.publisher
+	vals['constraints_access'] = md.accessrights
+	vals['constraints_other'] = md.license
+	vals['date'] = sniff_date(md.modified.strip())
+
+    else:
+        raise RuntimeError('Unsupported metadata format')
+
+    return vals
 
 def _create_db_featurestore(name, data, overwrite = False, charset = None):
     """Create a database store then use it to import a shapefile.
@@ -883,3 +989,22 @@ def inverse_mercator(xy):
     lat = (xy[1] / 20037508.34) * 180
     lat = 180/math.pi * (2 * math.atan(math.exp(lat * math.pi / 180)) - math.pi / 2)
     return (lon, lat)
+
+def sniff_date(datestr):
+    """Attempt to parse date into datetime.datetime object"""
+
+    fmt_str = None
+
+    if len(datestr) == 8:  # '20001122'
+        datestr = '%s-%s-%s' % (datestr[:4], datestr[4:6], datestr[-2:])
+        fmt_str = '%Y-%m-%d'
+    elif len(datestr) == 10: # '2000-11-22'
+        fmt_str = '%Y-%m-%d'
+    elif datestr.find('Z') != -1: # '2000-11-22T11:11:11Z'
+        fmt_str = '%Y-%m-%dT%H:%M:%SZ'
+    elif datestr.find('T') != -1: # '2000-11-22T'
+        fmt_str = '%Y-%m-%dT'
+    else:
+        return None
+
+    return datetime.datetime.strptime(datestr, fmt_str)

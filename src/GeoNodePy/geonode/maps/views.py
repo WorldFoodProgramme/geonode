@@ -914,7 +914,7 @@ def layer_replace(request, layername):
         if layer.metadata_uploaded:  # it's an XML metadata upload update
             # save the XML file to django and catalogue
 
-            from geonode.maps.utils import update_metadata
+            from geonode.maps.utils import update_metadata, set_metadata
 
             form = LayerMetadataUploadForm(request.POST, request.FILES)
 
@@ -922,7 +922,8 @@ def layer_replace(request, layername):
                 try:
                     layer_to_update = Layer.objects.get_or_create(typename=layer.typename)[0]
 
-                    md_xml, md_title, md_abstract = update_metadata(layer.uuid, form.cleaned_data['xml_file'].read(), layer_to_update)
+                    xml_file = form.cleaned_data['xml_file'].read()
+                    md_xml, md_title, md_abstract = update_metadata(layer.uuid, xml_file, layer_to_update)
 
                     Layer.objects.filter(typename=layer.typename).update(
                         metadata_xml=md_xml,
@@ -934,6 +935,9 @@ def layer_replace(request, layername):
                     layer_to_update.title = md_title
                     layer_to_update.abstract = md_abstract
                     layer_to_update.save_to_catalogue()
+
+                    vals = set_metadata(xml_file, layer_to_update)
+                    Layer.objects.filter(typename=layer.typename).update(**vals)
 
                     return HttpResponse(json.dumps({
                         "success": True,
