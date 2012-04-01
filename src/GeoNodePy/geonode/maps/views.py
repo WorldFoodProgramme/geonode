@@ -946,6 +946,7 @@ def layer_replace(request, layername):
 
                     vals = set_metadata(xml_file, layer_to_update)
                     Layer.objects.filter(typename=layer.typename).update(**vals)
+                    Layer.objects.filter(typename=layer.typename).update(csw_anytext=gen_anytext(md_xml))
 
                     return HttpResponse(json.dumps({
                         "success": True,
