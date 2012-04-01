@@ -479,8 +479,8 @@ def save(layer, base_file, user, overwrite = True, title=None,
         vals = set_metadata(md_xml, saved_layer)
         Layer.objects.filter(uuid=layer_uuid).update(**vals)
 
-#    # add to CSW catalogue
-#    saved_layer.save_to_catalogue()
+    # add to CSW catalogue
+    saved_layer.save_to_catalogue()
 
     # save XML doc
     xml_doc = gen_iso_xml(saved_layer)
@@ -613,7 +613,6 @@ def file_upload(filename, user=None, title=None, overwrite=True, keywords=[]):
         layer = name
 
     new_layer = save(layer, filename, theuser, overwrite, keywords=keywords)
-
 
     return new_layer
 

@@ -735,6 +735,14 @@ def layer_metadata(request, layername):
                 xml_doc = gen_iso_xml(the_layer)
                 the_layer.metadata_xml=xml_doc
                 the_layer.csw_anytext = gen_anytext(xml_doc)
+                the_layer.spatial_representation_type = layer_form.cleaned_data['spatial_representation_type']
+                the_layer.edition = layer_form.cleaned_data['edition']
+                the_layer.purpose = layer_form.cleaned_data['purpose']
+                the_layer.maintenance_frequency = layer_form.cleaned_data['maintenance_frequency']
+                the_layer.constraints_access = layer_form.cleaned_data['constraints_access']
+                the_layer.constraints_other = layer_form.cleaned_data['constraints_other']
+                the_layer.data_quality_statement = layer_form.cleaned_data['data_quality_statement']
+                the_layer.supplemental_information = layer_form.cleaned_data['supplemental_information']
                 the_layer.save()
                 return HttpResponseRedirect("/data/" + layer.typename)
 
