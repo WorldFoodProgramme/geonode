@@ -59,6 +59,11 @@ At this point, the CSW server implementation is ready for GeoNode integration.  
       #'type': 'geonetwork',
       #'type': 'deegree',
 
+      # If the CSW is configured to connect directly to GeoNode's Django database
+      # setting this to True will turn OFF CSW-T capabilities in GeoNode
+      # this currently works only with pycsw
+      'localdb': True,
+
       # The FULLY QUALIFIED base url to the CSW instance for this GeoNode
       'url': 'http://$HOST/pycsw/csw.py',
       #'url': 'http://$HOST:8080/geonetwork/srv/en/csw',

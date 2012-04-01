@@ -160,6 +160,10 @@ GEOSERVER_CREDENTIALS = "geoserver_admin", GEOSERVER_TOKEN
 CSW = {
     # The underlying CSW implementation ("pycsw", "geonetwork", "deegree")
     'type': 'pycsw',
+    # If the CSW is configured to connect directly to GeoNode's Django database
+    # setting this to True will turn OFF CSW-T capabilities in GeoNode
+    # this currently works only with pycsw
+    'localdb': True,
     #'type': 'geonetwork',
     #'type': 'deegree',
 

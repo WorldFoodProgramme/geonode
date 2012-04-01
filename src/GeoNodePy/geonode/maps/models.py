@@ -1081,19 +1081,21 @@ class Layer(ResourceBase):
         cascading_delete(Layer.objects.gs_catalog, self.resource)
 
     def delete_from_catalogue(self):
-        cat = Layer.objects.csw_catalogue
-        cat.delete_layer(self)
-        cat.logout()
+        if not settings.CSW['localdb']:
+            cat = Layer.objects.csw_catalogue
+            cat.delete_layer(self)
+            cat.logout()
 
     def save_to_catalogue(self):
-        cat = Layer.objects.csw_catalogue
-        record = cat.get_by_uuid(self.uuid)
-        if record is None:
-            md_link = cat.create_from_layer(self)
-            self.metadata_links = [("text/xml", "TC211", md_link)]
-        else:
-            cat.update_layer(self)
-        cat.logout()
+        if not settings.CSW['localdb']:
+            cat = Layer.objects.csw_catalogue
+            record = cat.get_by_uuid(self.uuid)
+            if record is None:
+                md_link = cat.create_from_layer(self)
+                self.metadata_links = [("text/xml", "TC211", md_link)]
+            else:
+                cat.update_layer(self)
+            cat.logout()
 
     @property
     def resource(self):
@@ -1721,7 +1723,8 @@ def delete_layer(instance, sender, **kwargs):
     Removes the layer from GeoServer and GeoNetwork
     """
     instance.delete_from_geoserver()
-    instance.delete_from_catalogue()
+    if not settings.CSW['localdb']:
+        instance.delete_from_catalogue()
 
 def post_save_layer(instance, sender, **kwargs):
     instance._autopopulate()
@@ -1730,10 +1733,12 @@ def post_save_layer(instance, sender, **kwargs):
     if kwargs['created']:
         instance._populate_from_gs()
 
-#    instance.save_to_catalogue()
+    if not settings.CSW['localdb']:
+        instance.save_to_catalogue()
 
     if kwargs['created']:
-#        instance._populate_from_catalogue()
+        if not settings.CSW['localdb']:
+            instance._populate_from_catalogue()
         instance.save(force_update=True)
 
 signals.pre_delete.connect(delete_layer, sender=Layer)
