@@ -482,13 +482,14 @@ def save(layer, base_file, user, overwrite = True, title=None,
     # add to CSW catalogue
     saved_layer.save_to_catalogue()
 
-    # save XML doc
-    xml_doc = gen_iso_xml(saved_layer)
-    Layer.objects.filter(uuid=layer_uuid).update(metadata_xml=xml_doc)
+    xml_doc = saved_layer.metadata_xml
 
     # grab anytext
     Layer.objects.filter(uuid=layer_uuid).update(csw_anytext=gen_anytext(xml_doc))
-    #saved_layer.anytext = gen_anytext(xml_doc)
+
+    # save XML doc
+    if 'xml' not in files:  # force the saving of an ISO document
+        Layer.objects.filter(uuid=layer_uuid).update(metadata_xml=xml_doc)
 
     # Step 11. Set default permissions on the newly created layer
     # FIXME: Do this as part of the post_save hook
