@@ -1,0 +1,23 @@
+/*
+
+For the following installation environment:
+
+- database: PostgreSQL
+- CSW: pycsw
+
+pycsw, when binding to PostgreSQL, requires the following function below to be defined against the database.
+
+See http://www.postgresql.org/docs/8.1/static/plpython.html for more information.
+
+Notes: the root of the pycsw install must be specified in the sys.path.append() line below.
+
+*/
+
+CREATE OR REPLACE FUNCTION query_spatial(bbox_data_wkt text, bbox_input_wkt text, predicate text, distance text)
+    RETURNS text
+AS $$
+    import sys
+    sys.path.append('/home/opendri/pycsw')
+    from server import util
+    return util.query_spatial(bbox_data_wkt, bbox_input_wkt, predicate, distance)
+$$ LANGUAGE plpythonu;
