@@ -234,7 +234,6 @@ def gen_iso_xml(layer):
     return md_doc
 
 def gen_anytext(xml):
-    ''' get all element and attribute data from an XML document '''
+    ''' get all element data from an XML document '''
     xml = etree.fromstring(xml)
-    return '%s %s' % (' '.join([value for value in xml.xpath('//text()')]),
-    ' '.join([value for value in xml.xpath('//attribute::*')]))
+    return ' '.join([value for value in xml.xpath('//text()')])
