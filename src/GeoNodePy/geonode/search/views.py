@@ -58,14 +58,11 @@ def search_api(request):
 
 	# Retrieve Query Params
 	id = request.REQUEST.get("id", None)
-	query = request.REQUEST.get('q',None)
-	name = request.REQUEST.get("name", None)
 	category = request.REQUEST.get("cat", None)
 	limit = int(request.REQUEST.get("limit", getattr(settings, "HAYSTACK_SEARCH_RESULTS_PER_PAGE", 20)))
 	startIndex = int(request.REQUEST.get("startIndex", 0))
 	startPage = int(request.REQUEST.get("startPage", 0))
 	sort = request.REQUEST.get("sort", "relevance")
-	order = request.REQUEST.get("order", "asc")
 	type = request.REQUEST.get("type", None)
 	fields = request.REQUEST.get("fields", None)
 	fieldset = request.REQUEST.get("fieldset", None)
@@ -87,10 +84,6 @@ def search_api(request):
 		elif type in ["vector", "raster"]:
 			# Type is one of our sub types
 			sqs = sqs.narrow("subtype:%s" % type)
-
-	# Filter by Query Params
-	if query:
-		sqs = sqs.filter(content=Raw(query))
 		
 	# filter by cateory
 	
@@ -137,20 +130,6 @@ def search_api(request):
 		data = json.loads(result.json)
 		data.update({"iid": i + startIndex})
 		results.append(data)
-	
-	# Filter Fields/Fieldsets
-	if fieldset:
-		if fieldset in fieldsets.keys():
-			for result in results:
-				for key in result.keys():
-					if key not in fieldsets[fieldset]:
-						del result[key]
-	elif fields:
-		fields = fields.split(',')
-		for result in results:
-			for key in result.keys():
-				if key not in fields:
-					del result[key]        
 
 	# Setup Facet Counts
 	sqs = sqs.facet("type").facet("subtype")
