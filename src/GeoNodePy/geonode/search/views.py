@@ -58,6 +58,7 @@ def search_api(request):
 
 	# Retrieve Query Params
 	id = request.REQUEST.get("id", None)
+	query = request.REQUEST.get('q',None)
 	category = request.REQUEST.get("cat", None)
 	limit = int(request.REQUEST.get("limit", getattr(settings, "HAYSTACK_SEARCH_RESULTS_PER_PAGE", 20)))
 	startIndex = int(request.REQUEST.get("startIndex", 0))
