@@ -34,8 +34,12 @@ urlpatterns = patterns('',
     (r'^data/', include(geonode.maps.urls.datapatterns)),
     (r'^maps/', include(geonode.maps.urls.urlpatterns)),
 
+    # Social
     (r'^comments/', include('dialogos.urls')),
     (r'^ratings/', include('agon_ratings.urls')),
+
+    # Search
+    (r'search/', include('geonode.search.urls')),
 
     # Accounts
     url(r'^accounts/ajax_login$', 'geonode.views.ajax_login',

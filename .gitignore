@@ -14,6 +14,7 @@ target
 
 # supporting stuff pulled in by paver script
 /src/GeoNodePy/geonode/media/static/
+/src/GeoNodePy/geonode/whoosh_index/
 /geoserver_token
 /development.db
 /django.log
@@ -24,9 +25,14 @@ target
 /src/gsconfig.py/
 /src/owslib/
 /src/avatar/
+/src/django-haystack/
 /src/nosexcover/
 /webapps/
 /src/GeoNodePy/capra/development.db
+/man
+/share/
+/src/haystack/
+/src/pyelasticsearch/
 
 # Directory created by collectstatic
 src/GeoNodePy/geonode/site_media/

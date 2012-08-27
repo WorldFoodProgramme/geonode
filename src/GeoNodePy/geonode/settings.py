@@ -108,6 +108,7 @@ INSTALLED_APPS = (
     'registration',
     'profiles',
     'avatar',
+    'haystack',
     'dialogos',
     'agon_ratings',
     'taggit',
@@ -352,7 +353,6 @@ MAP_BASELAYERS = [{
 
 }]
 
-
 #GEONODE_CLIENT_LOCATION = "http://localhost:8001/geonode-client/"
 GEONODE_CLIENT_LOCATION = "/static/geonode/"
 
@@ -373,6 +373,15 @@ DB_DATASTORE_PORT = ''
 DB_DATASTORE_TYPE = ''
 # Name of the store in geoserver
 DB_DATASTORE_NAME = ''
+
+# Haystack Search Backend Configuration
+HAYSTACK_CONNECTIONS = {
+    'default': {
+        'ENGINE': 'haystack.backends.elasticsearch_backend.ElasticsearchSearchEngine',
+        'URL': 'http://127.0.0.1:9200/',
+        'INDEX_NAME': 'haystack',
+    },
+}
 
 # Load more settings from a file called local_settings.py if it exists
 try:
