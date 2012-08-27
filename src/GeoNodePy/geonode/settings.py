@@ -108,6 +108,7 @@ INSTALLED_APPS = (
     'registration',
     'profiles',
     'avatar',
+    'haystack',
     'dialogos',
     'agon_ratings',
     'taggit',
