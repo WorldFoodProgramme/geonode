@@ -56,6 +56,12 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     localGeoServerBaseUrl: "",
 
     /**
+     * api: config[localCSWBaseUrl]
+     * ``String`` url of the local CS-W instance
+     */
+    localCSWBaseUrl: "",
+
+    /**
      * api: config[useMapOverlay]
      * ``Boolean`` Should we add a scale overlay to the map? Set to false
      * to not add a scale overlay.
@@ -357,6 +363,35 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
     },
     
     loadConfig: function(config) {
+        var beforeLoad = function(proxy, params) {
+            params.headers = {
+                'X-CSRFToken': Ext.util.Cookies.get('csrftoken')
+            };
+        };
+        var found = false;
+        for (var key in config.sources) {
+            var source = config.sources[key];
+            if (source.ptype === "gxp_cataloguesource" && source.url === config.localCSWBaseUrl) {
+                found = true;
+                Ext.apply(source.proxyOptions, {
+                    listeners: {
+                        "beforeload": beforeLoad
+                    }
+                });
+                break;
+            }
+        }
+        if (found === false) {
+            config.sources['csw'] = {
+                ptype: "gxp_cataloguesource",
+                url: config.localCSWBaseUrl,
+                proxyOptions: {
+                    listeners: {
+                        "beforeload": beforeLoad
+                    }
+                }
+            };
+        }
         config.tools = (config.tools || []).concat({
             ptype: "gxp_zoom",
             actionTarget: {target: "paneltbar", index: 4}
@@ -379,6 +414,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             actionTarget: "treecontent.contextMenu"
         }, {
             ptype: "gxp_addlayers",
+            search: true,
             actionTarget: "treetbar",
             createExpander: function() {
                 return new GeoExplorer.CapabilitiesRowExpander({
@@ -396,6 +432,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             actionTarget: ["treetbar", "treecontent.contextMenu"]
         }, {
             ptype: "gxp_styler",
+            sameOriginStyling: false,
             rasterStyling: true,
             actionTarget: ["treetbar", "treecontent.contextMenu"]
         }, {
@@ -462,7 +499,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             for (var id in this.layerSources) {
                 source = this.layerSources[id];
                 if (source.store && source instanceof gxp.plugins.WMSSource &&
-                                source.url.indexOf("/geoserver/wms" === 0)) {
+                                source.url.indexOf("/geoserver/wms") === 0) {
                     startSourceId = id;
                 }
             }
@@ -473,6 +510,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 if (tool.ptype === "gxp_addlayers") {
                     addLayers = tool;
                     addLayers.startSourceId = startSourceId;
+                    addLayers.catalogSourceKey = startSourceId;
                 }
             }
             if (!this.fromLayer && !this.mapID) {
