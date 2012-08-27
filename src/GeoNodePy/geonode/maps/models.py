@@ -10,6 +10,7 @@ from geonode.geonetwork import Catalog as GeoNetwork
 from django.db.models import signals
 from taggit.managers import TaggableManager
 from django.utils import simplejson as json
+from django.utils.safestring import mark_safe
 
 import httplib2
 import urllib
@@ -420,6 +421,13 @@ UPDATE_FREQUENCIES = [
 ]
 
 CONSTRAINT_OPTIONS = [
+    # Shortcuts added for convenience in Open Data cases.
+    'Public Domain Dedication and License (PDDL)',
+    'Attribution License (ODC-By)',
+    'Open Database License (ODC-ODbL)',
+    'CC-BY-SA',
+    
+    # ISO standard constraint options.
     'copyright',
     'intellectualPropertyRights',
     'license',
@@ -516,6 +524,12 @@ class Contact(models.Model):
         return u"%s (%s)" % (self.name, self.organization)
 
 
+def create_user_profile(sender, instance, created, **kwargs):
+    profile, created = Contact.objects.get_or_create(user=instance, defaults={'name': instance.username})
+
+signals.post_save.connect(create_user_profile, sender=User)
+
+
 _viewer_projection_lookup = {
     "EPSG:900913": {
         "maxResolution": 156543.03390625,
@@ -595,7 +609,7 @@ class LayerManager(models.Manager):
     def default_metadata_author(self):
         return self.admin_contact()
 
-    def slurp(self, ignore_errors=True, verbosity=1, console=sys.stdout):
+    def slurp(self, ignore_errors=True, verbosity=1, console=sys.stdout, owner=None):
         """Configure the layers available in GeoServer in GeoNode.
 
            It returns a list of dictionaries with the name of the layer,
@@ -622,6 +636,7 @@ class LayerManager(models.Manager):
                     "typename": "%s:%s" % (workspace.name, resource.name),
                     "title": resource.title or 'No title provided',
                     "abstract": resource.abstract or 'No abstract provided',
+                    "owner": owner,
                     "uuid": str(uuid.uuid4())
                 })
 
@@ -688,7 +703,7 @@ class Layer(models.Model, PermissionLevelMixin):
     # see poc property definition below
 
     # section 3
-    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
     keywords_region = models.CharField(_('keywords region'), max_length=3, choices= COUNTRIES, default = 'USA')
     constraints_use = models.CharField(_('constraints use'), max_length=255, choices = [(x, x) for x in CONSTRAINT_OPTIONS], default='copyright')
     constraints_other = models.TextField(_('constraints other'), blank=True, null=True)
@@ -767,7 +782,7 @@ class Layer(models.Model, PermissionLevelMixin):
                     })
                 content = client.request(description_url)[1]
                 doc = etree.fromstring(content)
-                extent = doc.find("//%(gml)slimits/%(gml)sGridEnvelope" % {"gml": "{http://www.opengis.net/gml}"})
+                extent = doc.find(".//%(gml)slimits/%(gml)sGridEnvelope" % {"gml": "{http://www.opengis.net/gml}"})
                 low = extent.find("{http://www.opengis.net/gml}low").text.split()
                 high = extent.find("{http://www.opengis.net/gml}high").text.split()
                 w, h = [int(h) - int(l) for (h, l) in zip(high, low)]
@@ -790,8 +805,9 @@ class Layer(models.Model, PermissionLevelMixin):
             except Exception:
                 # if something is wrong with WCS we probably don't want to link
                 # to it anyway
-                # TODO: This is a bad idea to eat errors like this.
-                pass 
+                # But at least this indicates a problem
+                notiff = mark_safe("<del>GeoTIFF</del>")
+                links.extend([("tiff",notiff,"#")])
 
         def wms_link(mime):
             return settings.GEOSERVER_BASE_URL + "wms?" + urllib.urlencode({
@@ -1206,7 +1222,7 @@ class Map(models.Model, PermissionLevelMixin):
     last_modified = models.DateTimeField(auto_now_add=True)
     # The last time the map was modified.
     
-    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"))
+    keywords = TaggableManager(_('keywords'), help_text=_("A space or comma-separated list of keywords"), blank=True)
 
     def __unicode__(self):
         return '%s by %s' % (self.title, (self.owner.username if self.owner else "<Anonymous>"))
@@ -1274,7 +1290,7 @@ class Map(models.Model, PermissionLevelMixin):
         """
         layers = list(self.layer_set.all()) + list(added_layers) #implicitly sorted by stack_order
         server_lookup = {}
-        sources = {'local': settings.DEFAULT_LAYER_SOURCE }
+        sources = {}
 
         def uniqify(seq):
             """
@@ -1420,7 +1436,7 @@ class MapLayerManager(models.Manager):
         """
         layer_cfg = dict(layer)
         for k in ["format", "name", "opacity", "styles", "transparent",
-                  "fixed", "group", "visibility", "title", "source"]:
+                  "fixed", "group", "visibility", "source"]:
             if k in layer_cfg: del layer_cfg[k]
 
         source_cfg = dict(source)
