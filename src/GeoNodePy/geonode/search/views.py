@@ -91,6 +91,10 @@ def search_api(request):
 	if category is not None:
 		sqs = sqs.narrow('category:%s' % category)
 
+	# Filter by Query Params
+	if query:
+		sqs = sqs.filter(content__contains=Raw(query))
+
 	# Apply Sort
 	# TODO: Handle for Revised sort types
 	# [relevance, alphabetically, rating, created, updated, popularity]
