@@ -14,7 +14,7 @@ Ext.onReady(function(){
   var exploreMapButton = new Ext.Button({
      renderTo: 'explore_map',
      text: '{% trans "Explore Maps" %}',
-     handler: function(){ window.location = "{% url maps_search %}"; }
+     handler: function(){ window.location = "{% url search %}"; }
   });
 
   var createMapButton = new Ext.Button({
@@ -26,7 +26,7 @@ Ext.onReady(function(){
   var exploreDataButton = new Ext.Button({
      renderTo: 'explore_data',
      text: '{% trans "Explore Data" %}',
-     handler: function(){ window.location = "{% url data_search %}"; }
+     handler: function(){ window.location = "{% url search %}"; }
   });
 
   var uploadDataButton = new Ext.Button({
