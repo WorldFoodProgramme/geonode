@@ -30,7 +30,7 @@ def search(request):
 	DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config()
 	#DEFAULT_MAP_CONFIG, DEFAULT_BASE_LAYERS = default_map_config(request)
 	# for non-ajax requests, render a generic search page
-
+	DEFAULT_BASE_LAYERS = DEFAULT_BASE_LAYERS[1:]
 	params = dict(request.REQUEST)
 
 	map = Map(projection="EPSG:900913", zoom=1, center_x=0, center_y=0)
