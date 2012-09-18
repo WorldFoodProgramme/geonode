@@ -508,7 +508,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             ptype: "gxp_loadingindicator", 
             onlyShowOnFirstLoad: true
         }];
-         
+        
         GeoExplorer.superclass.initMapPanel.apply(this, arguments);
     },
     
@@ -599,6 +599,18 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
                 item.disable();
             });
         }, this);
+
+        this.on("ready",function(){
+            var mpos = new OpenLayers.Control.MousePosition({
+                displayProjection: new OpenLayers.Projection('EPSG:4326'),
+                numDigits: 4,
+                prefix: 'E  ',
+                separator: ' , N ',
+                autoActivate:true
+            });
+            this.mapPanel.map.addControl(mpos);
+            mpos.moveTo({x:'100%',y:0});
+        },this);
 
         var showContextMenu;
         this.googleEarthPanel = new gxp.GoogleEarthPanel({
