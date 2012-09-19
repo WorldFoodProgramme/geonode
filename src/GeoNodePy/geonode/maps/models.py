@@ -137,6 +137,7 @@ COUNTRIES = (
     ('DEU', _('Germany')),
     ('GHA', _('Ghana')),
     ('GIB', _('Gibraltar')),
+    ('GLB', _('Global')),
     ('GRC', _('Greece')),
     ('GRL', _('Greenland')),
     ('GRD', _('Grenada')),
