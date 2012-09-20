@@ -95,9 +95,9 @@ def search_api(request):
 	# TODO: Handle for Revised sort types
 	# [relevance, alphabetically, rating, created, updated, popularity]
 	if sort.lower() == "newest":
-		sqs = sqs.order_by("-date")
+		sqs = sqs.order_by("-modified")
 	elif sort.lower() == "oldest":
-		sqs = sqs.order_by("date")
+		sqs = sqs.order_by("modified")
 	elif sort.lower() == "alphaaz":
 		sqs = sqs.order_by("title")
 	elif sort.lower() == "alphaza":
