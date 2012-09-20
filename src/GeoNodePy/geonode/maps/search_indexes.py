@@ -13,7 +13,7 @@ class LayerIndex(indexes.RealTimeSearchIndex, indexes.Indexable):
     iid = indexes.IntegerField(model_attr='id')
     type = indexes.CharField(faceted=True)
     subtype = indexes.CharField(faceted=True)
-    name = indexes.CharField(model_attr="title")
+    title = indexes.CharField(model_attr="title")
     description = indexes.CharField(model_attr="abstract")
     owner = indexes.CharField(model_attr="owner", faceted=True)
     created = indexes.DateTimeField(model_attr="date")
@@ -90,7 +90,7 @@ class LayerIndex(indexes.RealTimeSearchIndex, indexes.Indexable):
 class MapIndex(indexes.RealTimeSearchIndex, indexes.Indexable):
     text = indexes.CharField(document=True, use_template=True)
     title = indexes.CharField(model_attr="title")
-    date = indexes.DateTimeField(model_attr="last_modified")
+    modified = indexes.DateTimeField(model_attr="last_modified")
     iid = indexes.IntegerField(model_attr='id')
     type = indexes.CharField(faceted=True)
     bbox_left = indexes.FloatField(model_attr='bbox_left')
