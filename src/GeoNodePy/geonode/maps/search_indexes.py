@@ -13,7 +13,7 @@ class LayerIndex(indexes.RealTimeSearchIndex, indexes.Indexable):
     iid = indexes.IntegerField(model_attr='id')
     type = indexes.CharField(faceted=True)
     subtype = indexes.CharField(faceted=True)
-    title = indexes.CharField(model_attr="title")
+    title = indexes.CharField(model_attr="name")
     description = indexes.CharField(model_attr="abstract")
     owner = indexes.CharField(model_attr="owner", faceted=True)
     created = indexes.DateTimeField(model_attr="date")
