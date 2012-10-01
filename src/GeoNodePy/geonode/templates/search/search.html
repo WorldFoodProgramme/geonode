@@ -140,22 +140,22 @@
 
         .pdf {
             /* @todo */
-            background-image: url({{ STATIC_URL }}theme/img/silk/page_white_acrobat.png)
+            background-image: url('{{ STATIC_URL }}theme/img/silk/page_white_acrobat.png');
         }
 
         .kml, .kmz {
             /* @todo */
-            background-image: url({{ STATIC_URL }}theme/img/geosilk/kml.png)
+            background-image: url('{{ STATIC_URL }}theme/img/geosilk/kml.png');
         }
 
         .geotiff, .tiff, .png {
             /* @todo */
-            background-image: url({{ STATIC_URL }}theme/img/geosilk/page_white_raster.png)
+            background-image: url('{{ STATIC_URL }}theme/img/geosilk/page_white_raster.png');
         }
 
         .csv .shp, .zip {
             /* @todo */
-            background-image: url({{ STATIC_URL }}theme/img/geosilk/page_white_vector.png)
+            background-image: url('{{ STATIC_URL }}theme/img/geosilk/page_white_vector.png');
         }
     </style>
 {% endblock %}
@@ -174,9 +174,6 @@
                     <option value="relevance" selected="true">Relevance</option>
                     <option value="newest">Newest</option>
                     <option value="oldest">Oldest</option>
-                    <option value="alphaaz">Alphabetical (A-Z)</option>
-                    <option value="alphaza">Alphabetical (Z-A)</option>
-                    <option disabled="true" value="popularity">Popularity</option>
                 </select>
 
                 <input type="submit" value="Search">
@@ -217,7 +214,6 @@
                         <li><a href="#raster">Raster</a><span id="raster-count">()</span></li>
                     </ul>
                 </li>
-                <li><a href="#contact">Users</a><span id="contact-count">()</span></li>
             </ul>
         </div>
 

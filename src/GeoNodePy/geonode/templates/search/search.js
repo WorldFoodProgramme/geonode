@@ -221,7 +221,6 @@ Ext.onReady(function(){
 			counts.layer ? Ext.fly('layer-count').update("(" + counts.layer + ")") : Ext.fly('layer-count').update("(0)");
 			counts.vector ? Ext.fly('vector-count').update("(" + counts.vector + ")") : Ext.fly('vector-count').update("(0)");
 			counts.raster ? Ext.fly('raster-count').update("(" + counts.raster + ")") : Ext.fly('raster-count').update("(0)");
-			counts.contact ? Ext.fly('contact-count').update("(" + counts.contact + ")") : Ext.fly('contact-count').update("(0)");
 		},
 		updateCategories: function(categories){
 			var list = '';
