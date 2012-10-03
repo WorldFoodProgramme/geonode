@@ -467,7 +467,8 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         else {
             //Proceed if this is a local queryable WMS layer
             var layer = layerRecord.getLayer();
-            if (layer instanceof OpenLayers.Layer.WMS) {
+            if (layer instanceof OpenLayers.Layer.WMS && (layer.url == "/geoserver/wms" ||
+                    layer.url.indexOf(this.localGeoServerBaseUrl.replace(this.urlPortRegEx, "$1/")) == 0)) {
                 Ext.Ajax.request({
                     url:"/data/" + layer.params.LAYERS + "/ajax-edit-check",
                     method:"POST",
