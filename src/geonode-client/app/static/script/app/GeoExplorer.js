@@ -454,7 +454,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         var buttons = this.tools["gn_layer_editor"].actions;
 
         var toggleButtons = function(enabled) {
-            for (var i; i < buttons.length; i++) {
+            for (var i = 0; i < buttons.length; i++) {
                 enabled ? buttons[i].enable() : buttons[i].disable();
             }
         }
@@ -467,8 +467,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
         else {
             //Proceed if this is a local queryable WMS layer
             var layer = layerRecord.getLayer();
-            if (layer instanceof OpenLayers.Layer.WMS && (layer.url == "/geoserver/wms" ||
-                    layer.url.indexOf(this.localGeoServerBaseUrl.replace(this.urlPortRegEx, "$1/")) == 0)) {
+            if (layer instanceof OpenLayers.Layer.WMS) {
                 Ext.Ajax.request({
                     url:"/data/" + layer.params.LAYERS + "/ajax-edit-check",
                     method:"POST",
@@ -597,7 +596,7 @@ var GeoExplorer = Ext.extend(gxp.Viewer, {
             this.toolbar.enable();
             disabled.each(function(item) {
                 item.disable();
-            });
+            });            
         }, this);
 
         this.on("ready",function(){
