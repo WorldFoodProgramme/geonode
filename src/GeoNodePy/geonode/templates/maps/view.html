@@ -72,6 +72,10 @@ Ext.onReady(function() {
     }, {{ config }});
 
     app = new GeoExplorer(config);
+    //Activate the editing if a map is created with a layer already in the config
+    app.on('ready',function(){
+        app.tools["gn_layer_editor"].getFeatureManager().setLayer(app.selectedLayer);
+    });
 
     var permalinkTemplate = new Ext.Template("{protocol}//{host}/maps/{id}");
     var permalink = function(id) {
