@@ -27,7 +27,7 @@ Ext.onReady(function(){
 		list: Ext.get(Ext.query('#search_results ul')[0]),
 		selModel: null,
 		dataCartStore: null,
-		queryItems: {},
+		queryItems: {{ initial_params }},
 		totalQueryCount: 0,
 		activateThumbs: false,
 		store: new Ext.data.JsonStore({

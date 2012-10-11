@@ -32,6 +32,8 @@ def search(request):
 	# for non-ajax requests, render a generic search page
 	DEFAULT_BASE_LAYERS = DEFAULT_BASE_LAYERS[1:]
 	params = dict(request.REQUEST)
+	init_query = request.REQUEST.get('q','')
+	init_type = request.REQUEST.get('type','')
 
 	map = Map(projection="EPSG:900913", zoom=1, center_x=0, center_y=0)
 
@@ -47,7 +49,8 @@ def search(request):
 		"GOOGLE_API_KEY": settings.GOOGLE_API_KEY,
 		"site": settings.SITEURL,
 		"facets": facets,
-		"keywords": Layer.objects.gn_catalog.get_all_keywords()
+		"keywords": Layer.objects.gn_catalog.get_all_keywords(),
+		'initial_params': json.dumps({'q': init_query, 'type': init_type})
 	}))
 
 
